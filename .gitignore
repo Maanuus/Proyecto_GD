@@ -1,0 +1,17 @@
+# Entornos y cachés de Python / Jupyter
+.venv/
+venv/
+__pycache__/
+.ipynb_checkpoints/
+
+# Salidas regenerables
+perfilado_*.html
+
+# Material del curso (no es parte del entregable)
+*.pdf
+*.pptx
+# Excepción: los informes en PDF sí se entregan
+!docs/*.pdf
+
+# Los datos crudos NO se guardan: se leen desde las URL raw de JHU.
+# En data/ solo va la capa limpia (Parquet).
