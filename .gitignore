@@ -14,4 +14,7 @@ perfilado_*.html
 !docs/*.pdf
 
 # Los datos crudos NO se guardan: se leen desde las URL raw de JHU.
-# En data/ solo va la capa limpia (Parquet).
+# En data/ solo van la capa limpia (Parquet) y el DW (SQLite).
+
+# El DW se sube comprimido (data/dw/covid_dw.zip): el .db pesa ~130 MB y GitHub acepta hasta 100 MB
+data/dw/*.db
