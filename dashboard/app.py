@@ -415,13 +415,24 @@ with tab_alerta:
         tabla = pronostico.assign(real=real.values).set_index("fecha").round(0)
         tabla.index = tabla.index.date
         columna_1, columna_2 = st.columns([2, 1])
-        columna_1.dataframe(tabla, height=530)
+        if pequeno:
+            # Igual que en el Resumen: en territorios chicos no se muestra el detalle día a día (04_proteccion)
+            columna_1.info(f"🔒 {pais} tiene menos de {numero(UMBRAL_POBLACION)} habitantes: por protección de datos no se "
+                           "muestra la tabla día a día. El gráfico usa la media móvil de 7 días y el error resume los 14 días.")
+        else:
+            columna_1.dataframe(tabla, height=530)
         if real.notna().all():
+            # El MAPE divide por lo real: los días con 0 casos (países que informan una vez a la semana) no se pueden usar
+            con_casos = real.values > 0
             errores = pd.DataFrame({modelo: {"MAE": (pronostico[modelo] - real.values).abs().mean(),
-                                             "MAPE (%)": ((pronostico[modelo] - real.values).abs() / real.values).mean() * 100}
+                                             "MAPE (%)": ((pronostico[modelo] - real.values).abs()[con_casos]
+                                                          / real.values[con_casos]).mean() * 100}
                                     for modelo in ["base", "holt", "holt_log"]}).T.round(1)
             columna_2.write("**Error frente a lo que pasó**")
             columna_2.dataframe(errores)
+            if not con_casos.all():
+                columna_2.caption(f"El MAPE usa solo los {con_casos.sum()} de 14 días con casos (no se divide por 0); "
+                                  "el MAE usa los 14.")
         else:
             columna_2.info("El corte está a menos de 14 días del fin de los datos (9-mar-2023): no hay con qué comparar.")
 
