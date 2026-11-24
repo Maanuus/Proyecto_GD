@@ -198,7 +198,8 @@ pais = st.sidebar.selectbox("País o región de Chile", lista_paises, index=list
 es_region = pais in regiones_chile
 corte = st.sidebar.date_input("Fecha de corte", value=ULTIMO_DIA, min_value=PRIMER_DIA, max_value=ULTIMO_DIA,
                               help="Todo el tablero muestra solo lo que se sabía hasta este día.")
-desde = st.sidebar.date_input("Tendencia desde", value=date(2020, 3, 1), min_value=PRIMER_DIA, max_value=corte)
+# Por defecto parte el 1-mar-2020, salvo que el corte sea anterior (no puede quedar después del corte)
+desde = st.sidebar.date_input("Tendencia desde", value=min(date(2020, 3, 1), corte), min_value=PRIMER_DIA, max_value=corte)
 st.sidebar.caption("Fuente: reportes diarios de Johns Hopkins CSSE (22-ene-2020 → 9-mar-2023), DW del proyecto.")
 
 corte = pd.Timestamp(corte)
