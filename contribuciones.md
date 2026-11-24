@@ -16,7 +16,7 @@ Matías y Camila trabajaron en pareja: el DW, la minería y el tablero los discu
 | Componente                                   | Archivos                                        | Responsable(s)                                                                         | Revisó                              |
 | -------------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------- |
 | Base del proyecto y Hito 1 (exploración, P7) | `00_exploracion.ipynb`, `README.md`             | Manuel Cisternas                                                                       | Luis Núñez                          |
-| R1 · Ingesta y arquitectura                  | `01_ingesta.ipynb`, `docs/arquitectura.md`      | Manuel Cisternas                                                                       | Matías Zúñiga                       |
+| R1 · Ingesta y arquitectura                  | `01_ingesta.ipynb`                              | Manuel Cisternas                                                                       | Matías Zúñiga                       |
 | R2 · Calidad y gobierno                      | `02_calidad.ipynb`, `docs/diccionario_datos.md` | Manuel Cisternas (notebook y diccionario)                                              | Luis Núñez (ajustes al diccionario) |
 | R3 · Data Warehouse e integración            | `03_dw.ipynb`, `data/dw/covid_dw.zip`           | Matías Zúñiga, con Camila Rivera                                                       | Manuel Cisternas                    |
 | R6 · Protección de datos y ética             | `04_proteccion.ipynb`                           | Luis Núñez                                                                             | Manuel Cisternas                    |
@@ -30,7 +30,7 @@ Matías y Camila trabajaron en pareja: el DW, la minería y el tablero los discu
 
 ### Herramienta
 
-**Claude Code** (Anthropic), modelo Claude Opus 5.5,
+**Claude Code** (Anthropic), modelo Claude Opus 5.5.
 
 ### Qué se hizo con IA
 
@@ -38,7 +38,7 @@ Matías y Camila trabajaron en pareja: el DW, la minería y el tablero los discu
 | ------------------------ | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Exploración              | Propuso y programó la lectura con hebras de los datos para bajar tiempo de ejecución         | Enfoque aprobado                                                                             |
 | Segmentación             | Propuso y programó k-means sobre la curva semanal normalizada; probó k = 2…8                 | Enfoque aprobado; k = 4 propuesto por silueta                                                |
-| Pronóstico y backtesting | Programó `pronosticar` (base y Holt), el test sin fuga y el backtesting con MAE/MAPE         | Enfoque aprobado; solo países (no regiones)                                                  |
+| Pronóstico y backtesting | Programó `pronosticar` (base y Holt), el test sin fuga y el backtesting con MAE/MAPE         | Enfoque aprobado; países y regiones de Chile                                                 |
 | Alerta                   | Programó `alerta`, probó 9 combinaciones de umbral y piso; propuso 25 % y piso 5             | Aprobado; queda como valor por defecto                                                       |
 | Tercer modelo            | Probó Holt en escala logarítmica y lo integró en `pronosticar`; justificó no usar vacunación | Aprobado (dentro de `pronosticar`)                                                           |
-| Tablero                  | Programó el mapa animado ; lo probó en el navegador                                          | Un solo archivo con copias de las funciones (sin `src/`); mapa animado en vez de coroplético |
+| Tablero                  | Programó el mapa animado; lo probó en el navegador                                           | Un solo archivo con copias de las funciones (sin `src/`); mapa animado en vez de coroplético |
