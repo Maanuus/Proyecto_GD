@@ -57,21 +57,27 @@ Colab ya trae pandas, pyarrow y matplotlib; `00_exploracion` instala `ydata-prof
 
 ### Opción B · Computador local (Python 3.10 a 3.13)
 > `ydata-profiling` todavía no es compatible con Python 3.14: usar 3.13 o anterior.
+> Si `python --version` dice 3.14, crear el entorno con [uv](https://docs.astral.sh/uv/) (instalar con `pip install uv`),
+> que descarga Python 3.12 (el mismo de Colab) sin tocar el Python instalado.
 
 1. Clonar el repositorio y abrir una terminal en su carpeta raíz:
    ```powershell
    git clone https://github.com/Maanuus/Proyecto_GD.git
    cd Proyecto_GD
    ```
-2. Crear y activar un entorno virtual:
+2. Crear y activar un entorno virtual con Python 3.12:
    ```powershell
-   python -m venv .venv
+   uv venv --python 3.12 .venv
    .\.venv\Scripts\Activate.ps1
+   python --version
    ```
-3. Instalar las dependencias y Jupyter:
+   El prompt debe empezar con `(.venv)` y la versión debe ser 3.12. Si ya se tiene Python 3.10 a 3.13 instalado,
+   también sirve `python -m venv .venv` en vez de `uv venv`.
+3. Instalar las dependencias y Jupyter (con el entorno activo):
    ```powershell
-   python -m pip install -r requirements.txt jupyter
+   uv pip install -r requirements.txt jupyter
    ```
+   Si el entorno se creó con `python -m venv`, usar `python -m pip install -r requirements.txt jupyter`.
 4. Ejecutar los notebooks en orden, abriéndolos en Jupyter o VS Code (*Run All*), o todos desde la terminal:
    ```powershell
    cd notebooks
