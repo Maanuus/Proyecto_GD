@@ -1,0 +1,65 @@
+# Diccionario de datos
+
+Qué significa cada columna, qué valores admite, de dónde viene y desde cuándo existe (R2, PPT S8).
+Los rangos y porcentajes son los **observados** en los archivos de `data/clean/`, no supuestos.
+
+- **Fuente:** reportes diarios de Johns Hopkins University (JHU CSSE), `csse_covid_19_daily_reports/`, leídos desde raw
+  (1.143 archivos, 22-ene-2020 → 9-mar-2023), y la tabla `UID_ISO_FIPS_LookUp_Table.csv`.
+- **Grano:** una fila por **territorio × día**. Un territorio es país + provincia/estado (`province_state`) + condado
+  (`admin2`); un texto vacío `""` significa "el territorio completo" (por ejemplo, `Chile` + `""` + `""` es Chile nacional).
+- **Esquemas:** el formato de los CSV cambió cinco veces. La columna `esquema` dice de cuál viene cada fila:
+
+| Esquema | Fechas | Qué cambia |
+|---|---|---|
+| 1 | 22-ene → 29-feb-2020 | `Province/State`, `Country/Region`, `Last Update`, `Confirmed`, `Deaths`, `Recovered` |
+| 2 | 1-mar → 21-mar-2020 | + `Latitude`, `Longitude` |
+| 3 | 22-mar → 28-may-2020 | nombres con `_` + `FIPS`, `Admin2`, `Active`, `Combined_Key` (llegan los condados de EE.UU.) |
+| 4 | 29-may → 8-nov-2020 | + `Incidence_Rate`, `Case-Fatality_Ratio` |
+| 5 | 9-nov-2020 → 9-mar-2023 | pasan a llamarse `Incident_Rate`, `Case_Fatality_Ratio` |
+
+## 1 · Tabla unificada · `data/clean/covid_limpio.parquet`
+La genera `notebooks/01_ingesta.ipynb`. 4.287.473 filas × 19 columnas. Los acumulados vienen tal cual los publicó JHU.
+
+| Columna | Significado | Tipo | Dominio (observado) | Origen | Desde | Notas |
+|---|---|---|---|---|---|---|
+| `country_region` | País o entidad | texto | 201 valores (`US`, `Chile`, `Korea, South`, `Taiwan*`…) | `Country/Region` (esq. 1–2), `Country_Region` (3–5); nombres unificados con `PAIS`/`TERRITORIO` (H1.3) | 22-ene-2020 | Incluye 5 entidades que no son país: `Diamond Princess`, `MS Zaandam`, `Summer Olympics 2020`, `Winter Olympics 2022`, `Antarctica` |
+| `province_state` | Provincia, estado o región | texto | 760 valores; `""` = país completo (4,6 % de filas) | `Province/State` (1–2), `Province_State` (3–5) | 22-ene-2020 | Chile: regiones desde el 20-may-2020 (16 regiones + `Unknown`); antes, solo nacional |
+| `admin2` | Condado | texto | 1.961 valores; `""` = sin condado (18,2 %) | `Admin2` | 22-mar-2020 (esq. 3) | Solo EE.UU. Incluye `Unassigned` y `Out of <estado>` (casos no asignados a un condado) |
+| `fecha_reporte` | Día al que corresponde el reporte | fecha | 22-ene-2020 → 9-mar-2023 (1.143 días) | **Calculada**: nombre del archivo (`MM-DD-AAAA.csv`) | 22-ene-2020 | Es la fecha que se usa en todo el análisis |
+| `last_update` | Cuándo JHU actualizó la fila | fecha (AAAA-MM-DD) | 22-ene-2020 → 10-mar-2023 | `Last Update` (1–2), `Last_Update` (3–5) | 22-ene-2020 | Formatos mezclados en el origen; se normalizó al día. Lo normal es `fecha_reporte` + 1 día (el reporte se publica a la mañana siguiente) |
+| `confirmed` | Casos confirmados **acumulados** | decimal (entero con vacíos) | ≥ 0; observado −302.844 → 38.618.509 | `Confirmed` | 22-ene-2020 | 4 filas negativas (3 de EE.UU. y Colombia/`Unknown` con −302.844); se corrigen a vacío en H2.4. Puede bajar de un día a otro (correcciones) |
+| `deaths` | Fallecidos **acumulados** | decimal | ≥ 0; observado −178 → 186.138 | `Deaths` | 22-ene-2020 | 0,01 % vacíos. 5 filas negativas (3 de EE.UU., 2 de Colombia/`Unknown`), corregidas a vacío en H2.4. 10.777 filas con `deaths` > `confirmed` (sobre todo `Unassigned` de EE.UU., Reino Unido, Canadá) |
+| `recovered` | Recuperados acumulados | decimal | ≥ 0; observado −854.405 → 6.399.531 | `Recovered` | 22-ene-2020 | **Columna que muere:** la suma mundial cae de 130,9 M (4-ago-2021) a 1,0 M (5-ago-2021) y queda en 0 desde el 23-sep-2021. 66 % vacíos. No se usa (H2.4) |
+| `active` | Casos activos (confirmados − fallecidos − recuperados) | decimal | ≥ 0; 0 → 5.658.278 | `Active` | 22-mar-2020 (esq. 3) | Depende de `recovered`: muere con ella. 66 % vacíos. No se usa |
+| `lat` | Latitud del territorio | decimal | −71,9 → 72,0 | `Latitude` (2), `Lat` (3–5) | 1-mar-2020 (esq. 2) | 2,3 % vacíos (esquema 1 y algunos territorios). 370 filas con `lat` = `long` = 0 (sobre todo `Unassigned` de EE.UU. y Canadá, y cruceros): no es un lugar real |
+| `long` | Longitud del territorio | decimal | −178,1 → 178,1 | `Longitude` (2), `Long_` (3–5) | 1-mar-2020 (esq. 2) | Igual que `lat` |
+| `fips` | Código FIPS del condado (EE.UU.) | decimal (código entero) | 60 → 99.999 | `FIPS` | 22-mar-2020 (esq. 3) | 18 % vacíos. Códigos especiales: 80xxx = `Out of <estado>`, 90xxx = `Unassigned` |
+| `combined_key` | Nombre completo del territorio («condado, estado, país») | texto | 4.164 valores | `Combined_Key` | 22-mar-2020 (esq. 3) | Repite información de las tres columnas de la llave |
+| `incident_rate` | Casos acumulados por 100.000 habitantes | decimal | 0 → 2.164.021,8 | `Incidence_Rate` (4), `Incident_Rate` (5) | 29-may-2020 (esq. 4) | 7 % vacíos. 358 filas > 100.000 (imposible: más casos que habitantes), todas de EE.UU. Usamos nuestra propia tasa con la población de UID |
+| `case_fatality_ratio` | Fallecidos ÷ casos × 100 (letalidad aparente) | decimal | 0 → 29.600 | `Case-Fatality_Ratio` (4), `Case_Fatality_Ratio` (5) | 29-may-2020 (esq. 4) | 6 % vacíos. 2.001 filas > 100 (cuando fallecidos > casos) |
+| `esquema` | Etapa de formato del CSV de origen | entero | 1 a 5 | **Calculada** desde `fecha_reporte` (tabla de arriba) | 22-ene-2020 | Filas: 4.242 · 5.555 · 217.486 · 643.463 · 3.416.727 |
+| `uid` | Identificador del territorio en la tabla UID de JHU | decimal (código entero) | 4 → 84.099.999; 4.113 valores | **Cruce** con `UID_ISO_FIPS_LookUp_Table.csv` por país + provincia + condado (H1.3) | 22-ene-2020 | 0,07 % sin cruce (3.159 filas: ciudades EE.UU./Canadá feb–mar 2020, cruceros, `Repatriated Travellers`…). Llave para traer población, ISO3 y coordenadas |
+
+| `archivo_origen` | CSV de JHU del que salió la fila (**linaje**, H2.6) | texto | 1.143 valores, `01-22-2020.csv` → `03-09-2023.csv` | **Calculada**: nombre del archivo leído | 22-ene-2020 | Se abre en `csse_covid_19_daily_reports/` + este nombre |
+| `fila_origen` | Posición de la fila dentro de ese CSV (**linaje**, H2.6) | entero | ≥ 0 (0 = primera fila de datos) | **Calculada**: índice de `pd.read_csv` | 22-ene-2020 | Se comprueba con `pd.read_csv(URL).iloc[fila_origen]` |
+
+**Tipos:** las cantidades son `float64` y no enteros porque tienen vacíos (`NaN`). Un vacío significa
+"no informado", **no** cero.
+
+## 2 · Columnas que agrega `data/clean/covid_diario.parquet`
+La genera `notebooks/02_calidad.ipynb`. Tiene las 19 columnas de arriba más 7, y 4.276.477 filas:
+- **Excluidas (10.918 filas):** las 5 entidades que no son país, los cruceros dentro de países (provincias con «Princess») y `Repatriated Travellers`.
+- **Corregidas a vacío:** las 6 filas con acumulado negativo (4 en `confirmed`, 5 en `deaths`).
+
+| Columna | Significado | Tipo | Dominio (observado) | Cómo se calcula | Notas |
+|---|---|---|---|---|---|
+| `casos_nuevos` | Casos nuevos del día en el territorio | decimal | −522.431 → 823.225 | `confirmed` − `confirmed` del día anterior del mismo territorio (H2.1) | Puede ser negativo (corrección). 0,10 % vacíos: primer día por cambio de granularidad y días con acumulado negativo |
+| `fallecidos_nuevos` | Fallecidos nuevos del día | decimal | −115.600 → 115.600 | Igual, con `deaths` | Igual que `casos_nuevos` |
+| `primer_dia_por_cambio` | El territorio aparece después que su país (cambio de granularidad) | lógico | 4.024 verdaderos | 1.er día del territorio > 1.er día de su país (H2.1) | Ese día los nuevos quedan vacíos: su primer acumulado arrastra casos anteriores. Ej.: regiones de Chile el 20-may-2020 |
+| `retrocede_casos` | El acumulado de casos bajó respecto al día anterior | lógico | 44.576 verdaderos | `casos_nuevos` < 0 | Se marca, no se borra |
+| `retrocede_fallecidos` | El acumulado de fallecidos bajó | lógico | 16.181 verdaderos | `fallecidos_nuevos` < 0 | Se marca, no se borra |
+| `sin_reporte` | Día sin información nueva | lógico | 1.740.170 verdaderos | `confirmed` > 0 y `casos_nuevos` = 0 (H2.3) | No distingue un día con 0 casos reales de uno sin informe. Sube en 2022 (informe semanal) |
+| `pico_rezago` | Día con casos acumulados de días anteriores | lógico | 37.998 verdaderos | `casos_nuevos` > 5 × media de los 7 días anteriores y ≥ 100 (H2.3) | No se redistribuyen los casos: no se sabe a qué días corresponden. Ej.: Chile 17-jun-2020 |
+
+Para trabajar a nivel **país** se suman los territorios por día y **después** se resta el día anterior (H2.1):
+restar territorio por territorio y sumar después daría saltos con el cambio de granularidad.
