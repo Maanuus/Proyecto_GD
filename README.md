@@ -49,7 +49,7 @@ Los notebooks se ejecutan **en orden** y cada uno usa los datos que deja el ante
 | Memoria  | ~2 GB de RAM libres                                                                                             |
 
 Probado con: Python 3.12.13, pandas 2.3.3, numpy 2.3.5, pyarrow 26.0.1, matplotlib 3.10.0, ydata-profiling 4.18.4,
-scikit-learn 1.9.1 y statsmodels 0.15.0.
+scikit-learn 1.9.1, statsmodels 0.15.0, streamlit 1.67.0 y plotly 7.1.0.
 
 ### Opción A · Google Colab
 
@@ -100,7 +100,7 @@ todo queda instalado en el mismo lugar que usa el notebook.
    `setuptools<81` es necesario: `ydata-profiling` usa `pkg_resources`, que setuptools 81 o superior ya no incluye.
 4. **Comprobar la instalación** (debe imprimir `ok`):
    ```powershell
-   .venv\Scripts\python -c "import pandas, pyarrow, matplotlib, ydata_profiling, sklearn, statsmodels; print('ok')"
+   .venv\Scripts\python -c "import pandas, pyarrow, matplotlib, ydata_profiling, sklearn, statsmodels, streamlit, plotly; print('ok')"
    ```
 5. **Ejecutar los notebooks**, de una de estas dos formas:
    - Todos con un solo comando desde la terminal (en orden, del 00 al 06):
@@ -119,19 +119,21 @@ todo queda instalado en el mismo lugar que usa el notebook.
 
 ## Tablero
 
-Desde la **raíz** del repositorio, con el entorno de la opción B:
+Se ejecuta en el computador, con el entorno de la opción B (Streamlit y Plotly ya quedan instalados en el paso 3,
+porque están en `requirements.txt`). Solo necesita `data/dw/covid_dw.zip` y `data/clean/indice_calidad_pais.parquet`,
+que vienen en el repositorio, así que no hace falta correr los notebooks antes. Desde la **raíz** del repositorio:
 
 ```powershell
-.venv\Scripts\python -m pip install streamlit plotly
 .venv\Scripts\python -m streamlit run dashboard/app.py
 ```
 
 Se abre en `http://localhost:8501`. La primera carga descomprime el DW y lo consulta (unos segundos; después queda en caché).
 
-- **Barra lateral:** país y **fecha de corte**. Todo el tablero muestra solo lo que se sabía hasta esa fecha.
+- **Barra lateral:** país o región de Chile (las 16 regiones están al final de la lista) y **fecha de corte**.
+  Todo el tablero muestra solo lo que se sabía hasta esa fecha.
 - **Resumen:** KPI al corte, tendencia con media móvil de 7 días y ranking de países (casos de 14 días por 100.000).
 - **Mapas:** burbujas de incidencia en el mundo y en las regiones de Chile, y mapa animado semana a semana.
-- **Alerta y pronóstico:** alerta temprana con su umbral visible, botón **Pronosticar** (`pronosticar(país, corte, 14)`,
+- **Alerta y pronóstico:** alerta temprana con su umbral visible, botón **Pronosticar** (`pronosticar(territorio, corte, 14)`,
   tres modelos) y advertencias de calidad.
 - Países con menos de 100.000 habitantes se muestran por semana y con conteos de 1 a 4 ocultos (protección de datos).
 
@@ -147,11 +149,11 @@ Capturas en `dashboard/capturas/`.
 | `notebooks/03_dw.ipynb`          | Data Warehouse en SQLite: dimensiones de fecha y territorio (país → región → condado), tabla de hechos territorio × día, vacunación de OWID y Banco Mundial con su tasa de cruce, y consultas OLAP |
 | `notebooks/04_proteccion.ipynb`  | Argumento legal (Leyes 19.628 y 21.719), supresión de celdas pequeñas y advertencias de interpretación                                                                                             |
 | `notebooks/05_analisis.ipynb`    | P1 a P4 y P7: Chile frente a Sudamérica, regiones y olas, letalidad y vacunación, confiabilidad por país                                                                                           |
-| `notebooks/06_mineria.ipynb`     | Segmentación con k-means, `pronosticar` con backtesting, `alerta` temprana, P5 y P6                                                                                                                |
+| `notebooks/06_mineria.ipynb`     | Segmentación con k-means, `pronosticar` con backtesting y `alerta` temprana (países y regiones de Chile), P5 y P6                                                                                  |
 | `dashboard/`                     | Tablero en Streamlit (`app.py`) y capturas                                                                                                                                                         |
 | `data/clean/`                    | Capa limpia en Parquet (`covid_limpio` y `covid_diario` con compresión zstd; `indice_calidad_pais`)                                                                                                |
 | `data/dw/covid_dw.zip`           | Data Warehouse en SQLite (modelo en estrella), comprimido                                                                                                                                          |
-| `docs/diccionario_datos.md`      | Diccionario de la tabla unificada                                                                                                                                                                  |
+| `docs/diccionario_datos.md`      | Diccionario de `covid_limpio` y `covid_diario`                                                                                                                                                     |
 | `docs/informe_tecnico.pdf`       | Informe técnico                                                                                                                                                                                    |
 | `docs/informe_comite.pdf`        | Informe al Comité                                                                                                                                                                                  |
 | `contribuciones.md`              | Quién hizo qué y cómo se usó IA generativa                                                                                                                                                         |
